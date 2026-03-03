@@ -1629,6 +1629,15 @@ function fmtCurrency(usd) {
 }
 
 function fmtNum(n) {
+  if (isNaN(n) || n === null || n === undefined) return '0.00';
+  // Always show full precise number — no K/M abbreviations
+  return Math.abs(n) >= 0.01
+    ? n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : n.toFixed(4);
+}
+
+// Compact version only used in ticker strip where space is tight
+function fmtCompact(n) {
   if (isNaN(n)) return '0.00';
   if (Math.abs(n) >= 1e6) return (n/1e6).toFixed(2) + 'M';
   if (Math.abs(n) >= 1e3) return (n/1e3).toFixed(1) + 'K';
@@ -1724,7 +1733,7 @@ function updateTickerStrip() {
     if (p) {
       const displayPrice = currency === 'EUR' ? p.price * eurUsdRate : p.price;
       const sym = currency === 'EUR' ? '€' : '$';
-      priceEl.textContent = sym + (displayPrice >= 1000 ? fmtNum(displayPrice) : displayPrice.toFixed(2));
+      priceEl.textContent = sym + fmtCompact(displayPrice);
       const sign = p.pct >= 0 ? '+' : '';
       chgEl.textContent = sign + p.pct.toFixed(2) + '%';
       chgEl.className = 'ticker-chg ' + (p.pct >= 0 ? 'up' : 'dn');
@@ -1845,6 +1854,109 @@ function saveHoldings() {
   localStorage.setItem('nxHoldings', JSON.stringify(holdings));
 }
 
+
+// ===========================
+// LOGO URL RESOLVER
+// ===========================
+const CRYPTO_LOGOS = {
+  BTC:  'https://assets.coingecko.com/coins/images/1/large/bitcoin.png',
+  ETH:  'https://assets.coingecko.com/coins/images/279/large/ethereum.png',
+  SOL:  'https://assets.coingecko.com/coins/images/4128/large/solana.png',
+  ADA:  'https://assets.coingecko.com/coins/images/975/large/cardano.png',
+  XRP:  'https://assets.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png',
+  DOGE: 'https://assets.coingecko.com/coins/images/5/large/dogecoin.png',
+  BNB:  'https://assets.coingecko.com/coins/images/825/large/bnb-icon2_2x.png',
+  DOT:  'https://assets.coingecko.com/coins/images/12171/large/polkadot.png',
+  MATIC:'https://assets.coingecko.com/coins/images/4713/large/matic-token-icon.png',
+  AVAX: 'https://assets.coingecko.com/coins/images/12559/large/Avalanche_Circle_RedWhite_Trans.png',
+  LINK: 'https://assets.coingecko.com/coins/images/877/large/chainlink-new-logo.png',
+  LTC:  'https://assets.coingecko.com/coins/images/2/large/litecoin.png',
+  UNI:  'https://assets.coingecko.com/coins/images/12504/large/uniswap-uni.png',
+  ATOM: 'https://assets.coingecko.com/coins/images/1481/large/cosmos_hub.png',
+  NEAR: 'https://assets.coingecko.com/coins/images/10365/large/near.jpg',
+};
+
+// Well-known ETF logos via issuer domains
+const ETF_LOGOS = {
+  SPY:  'https://assets.parqet.com/logos/symbol/SPY',
+  QQQ:  'https://assets.parqet.com/logos/symbol/QQQ',
+  VOO:  'https://assets.parqet.com/logos/symbol/VOO',
+  VTI:  'https://assets.parqet.com/logos/symbol/VTI',
+  IVV:  'https://assets.parqet.com/logos/symbol/IVV',
+  GLD:  'https://assets.parqet.com/logos/symbol/GLD',
+  SLV:  'https://assets.parqet.com/logos/symbol/SLV',
+  IAU:  'https://assets.parqet.com/logos/symbol/IAU',
+  TLT:  'https://assets.parqet.com/logos/symbol/TLT',
+  HYG:  'https://assets.parqet.com/logos/symbol/HYG',
+  XLF:  'https://assets.parqet.com/logos/symbol/XLF',
+  XLE:  'https://assets.parqet.com/logos/symbol/XLE',
+  XLK:  'https://assets.parqet.com/logos/symbol/XLK',
+  ARKK: 'https://assets.parqet.com/logos/symbol/ARKK',
+  VNQ:  'https://assets.parqet.com/logos/symbol/VNQ',
+  IEMG: 'https://assets.parqet.com/logos/symbol/IEMG',
+  EFA:  'https://assets.parqet.com/logos/symbol/EFA',
+  AGG:  'https://assets.parqet.com/logos/symbol/AGG',
+  BND:  'https://assets.parqet.com/logos/symbol/BND',
+  VEA:  'https://assets.parqet.com/logos/symbol/VEA',
+  SCHD: 'https://assets.parqet.com/logos/symbol/SCHD',
+};
+
+function getLogoSources(ticker) {
+  const t = ticker.toUpperCase();
+  // Return array of URLs to try in order
+  const sources = [];
+  if (CRYPTO_LOGOS[t]) sources.push(CRYPTO_LOGOS[t]);
+  if (ETF_LOGOS[t]) sources.push(ETF_LOGOS[t]);
+  // Parqet SVG (works for most major stocks worldwide)
+  sources.push(`https://assets.parqet.com/logos/symbol/${t}?format=svg`);
+  // Parqet PNG fallback
+  sources.push(`https://assets.parqet.com/logos/symbol/${t}`);
+  // Logo.dev fallback for stocks (company domain based)
+  sources.push(`https://img.logo.dev/ticker/${t.toLowerCase()}?token=pk_J9dMaFdDQpOBhzePQAfS3A&size=128`);
+  return sources;
+}
+
+// Multi-source logo loader — tries each URL in sequence
+function createLogoImg(ticker, abbr, colorGrad, extraStyle = '') {
+  const sources = getLogoSources(ticker);
+  const id = 'logo_' + ticker + '_' + Math.random().toString(36).substr(2,5);
+  // We store sources on the img via data attribute and use onerror chain
+  const srcList = JSON.stringify(sources).replace(/"/g, '&quot;');
+  return `<img 
+    id="${id}"
+    src="${sources[0]}"
+    data-sources="${srcList}"
+    data-idx="0"
+    data-abbr="${abbr}"
+    data-color="${colorGrad}"
+    style="width:100%;height:100%;object-fit:contain;border-radius:14px;padding:4px;background:#fff;${extraStyle}"
+    onerror="logoFallback(this)"
+    alt="${ticker}">`;
+}
+
+function logoFallback(img) {
+  try {
+    const sources = JSON.parse(img.getAttribute('data-sources').replace(/&quot;/g, '"'));
+    let idx = parseInt(img.getAttribute('data-idx')) + 1;
+    if (idx < sources.length) {
+      img.setAttribute('data-idx', idx);
+      img.src = sources[idx];
+    } else {
+      // All sources failed — show letter avatar
+      const abbr = img.getAttribute('data-abbr') || '?';
+      const color = img.getAttribute('data-color') || '#4f9eff';
+      const parent = img.parentElement;
+      parent.innerHTML = abbr;
+      parent.style.background = `linear-gradient(135deg, ${color}aa, ${color})`;
+      parent.style.display = 'flex';
+      parent.style.alignItems = 'center';
+      parent.style.justifyContent = 'center';
+    }
+  } catch(e) {
+    img.style.display = 'none';
+  }
+}
+
 // ===========================
 // RENDER
 // ===========================
@@ -1881,6 +1993,8 @@ function renderHero() {
 
   const displayTotal = currency === 'EUR' ? totalUSD * eurUsdRate : totalUSD;
   document.getElementById('heroValue').textContent = fmtNum(displayTotal);
+  // Store raw for reference
+  document.getElementById('heroValue').title = displayTotal.toFixed(2);
 
   const pnlEl = document.getElementById('heroPnl');
   if (holdings.length === 0) {
@@ -1890,7 +2004,6 @@ function renderHero() {
     const sign = gainUSD >= 0 ? '+' : '';
     const displayGain = currency === 'EUR' ? gainUSD * eurUsdRate : gainUSD;
     pnlEl.className = 'hero-pnl ' + (gainUSD >= 0 ? 'pos' : 'neg');
-    pnlEl.textContent = `${sign}${fmtCurrency(gainUSD).replace(/[€$]/,'')} (${sign}${gainPct.toFixed(2)}%)`;
     pnlEl.innerHTML = `${gainUSD >= 0 ? '▲' : '▼'} ${sym}${fmtNum(Math.abs(currency==='EUR'?gainUSD*eurUsdRate:gainUSD))} (${sign}${gainPct.toFixed(2)}%)`;
   }
 
@@ -1909,8 +2022,8 @@ function renderHero() {
   document.getElementById('qsHoldings').textContent = holdings.length;
   if (holdings.length > 0) {
     const sign = gainUSD >= 0 ? '+' : '';
-    const displayGain = currency === 'EUR' ? gainUSD * eurUsdRate : gainUSD;
-    document.getElementById('qsGain').textContent = (gainUSD >= 0 ? '+' : '') + fmtNum(Math.abs(displayGain));
+    const qsDisplayGain = currency === 'EUR' ? gainUSD * eurUsdRate : gainUSD;
+    document.getElementById('qsGain').textContent = (gainUSD >= 0 ? '+' : '') + sym + fmtNum(Math.abs(qsDisplayGain));
     // Best performer
     let best = null, bestPct = -Infinity;
     for (const h of holdings) {
@@ -1946,7 +2059,7 @@ function renderHoldings() {
     const costUSD = h.avgPriceUSD * h.shares;
     const gainUSD = valueUSD - costUSD;
     const gainPct = costUSD > 0 ? (gainUSD / costUSD) * 100 : 0;
-    const pct = totalUSD > 0 ? (valueUSD / totalUSD * 100).toFixed(1) : '0.0';
+    const pct = totalUSD > 0 ? (valueUSD / totalUSD * 100).toFixed(2) : '0.00';
     const symbol = currency === 'EUR' ? '€' : '$';
     const displayValue = currency === 'EUR' ? valueUSD * eurUsdRate : valueUSD;
     const displayGain = currency === 'EUR' ? gainUSD * eurUsdRate : gainUSD;
@@ -1955,8 +2068,8 @@ function renderHoldings() {
     const liveTag = lp ? `<span class="live-price-badge">● LIVE</span>` : '';
 
     return `<div class="holding-card fade-up" onclick="openDetail(${i})">
-      <div class="holding-avatar" style="background: linear-gradient(135deg, ${colorGrad}aa, ${colorGrad})">
-        ${abbr}
+      <div class="holding-avatar" style="background:#fff; overflow:hidden; padding:0;">
+        ${createLogoImg(h.ticker, abbr, colorGrad)}
       </div>
       <div class="holding-info">
         <div class="holding-name">${h.ticker}${liveTag}</div>
@@ -2092,7 +2205,7 @@ function renderSectors() {
     return `<div class="sector-row fade-up">
       <div class="sector-row-top">
         <div class="sector-name">${name}</div>
-        <div class="sector-pct">${fmtCurrency(val)} · ${pct.toFixed(1)}%</div>
+        <div class="sector-pct">${fmtCurrency(val)} · ${pct.toFixed(2)}%</div>
       </div>
       <div class="sector-bar-bg">
         <div class="sector-bar-fill" style="width:${pct}%;background:linear-gradient(90deg,${color},${color}88)"></div>
@@ -2182,13 +2295,21 @@ function openDetail(i) {
   const sheet = document.getElementById('detailSheet');
   sheet.innerHTML = `
     <div class="modal-handle"></div>
-    <div class="modal-title">${h.ticker} · ${h.company}</div>
+    <div class="modal-title" style="display:flex;align-items:center;gap:12px;">
+      <div style="width:44px;height:44px;border-radius:14px;overflow:hidden;background:#fff;flex-shrink:0;">
+        ${createLogoImg(h.ticker, h.ticker.substring(0,3), '#4f9eff', 'border-radius:12px;padding:3px;')}
+      </div>
+      <div>
+        <div style="font-size:18px;font-weight:700;">${h.ticker}</div>
+        <div style="font-size:13px;color:var(--text3);font-weight:400;">${h.company}</div>
+      </div>
+    </div>
     <div class="detail-row"><div class="detail-key">Shares / Units</div><div class="detail-val">${h.shares}</div></div>
     <div class="detail-row"><div class="detail-key">Avg Buy Price</div><div class="detail-val">${sym}${(h.avgPriceUSD * rate).toFixed(2)}</div></div>
     <div class="detail-row"><div class="detail-key">Current Price</div><div class="detail-val">${lp ? `${sym}${(lp * rate).toFixed(2)} <span class="live-price-badge">● LIVE</span>` : '— (no live data)'}</div></div>
-    <div class="detail-row"><div class="detail-key">Total Cost</div><div class="detail-val">${sym}${fmtNum(costUSD * rate)}</div></div>
-    <div class="detail-row"><div class="detail-key">Current Value</div><div class="detail-val">${sym}${fmtNum(valueUSD * rate)}</div></div>
-    <div class="detail-row"><div class="detail-key">Gain / Loss</div><div class="detail-val" style="color:${gainUSD>=0?'var(--green)':'var(--red)'}">${gainUSD>=0?'+':''}${sym}${fmtNum(Math.abs(gainUSD * rate))} (${gainPct>=0?'+':''}${gainPct.toFixed(2)}%)</div></div>
+    <div class="detail-row"><div class="detail-key">Total Cost</div><div class="detail-val">${sym}${fmtNum(currency === 'EUR' ? costUSD * eurUsdRate : costUSD)}</div></div>
+    <div class="detail-row"><div class="detail-key">Current Value</div><div class="detail-val">${sym}${fmtNum(currency === 'EUR' ? valueUSD * eurUsdRate : valueUSD)}</div></div>
+    <div class="detail-row"><div class="detail-key">Gain / Loss</div><div class="detail-val" style="color:${gainUSD>=0?'var(--green)':'var(--red)'}">${gainUSD>=0?'+':''}${sym}${fmtNum(Math.abs(currency === 'EUR' ? gainUSD * eurUsdRate : gainUSD))} (${gainPct>=0?'+':''}${gainPct.toFixed(2)}%)</div></div>
     <div class="detail-row"><div class="detail-key">Sector</div><div class="detail-val">${h.sector || 'Other'}</div></div>
     <button class="delete-btn" onclick="deleteHolding(${i})">🗑 Remove Position</button>
   `;
