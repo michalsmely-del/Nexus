@@ -1623,7 +1623,7 @@ function setCurrency(c) {
 
 function fmtCurrency(usd) {
   if (currency === 'EUR') {
-    return '€' + fmtNum(usd * eurUsdRate);
+    return '€' + fmtNum(usd / eurUsdRate);
   }
   return '$' + fmtNum(usd);
 }
@@ -1731,7 +1731,7 @@ function updateTickerStrip() {
     const chgEl = document.getElementById(`tc-${t}`);
     if (!priceEl) continue;
     if (p) {
-      const displayPrice = currency === 'EUR' ? p.price * eurUsdRate : p.price;
+      const displayPrice = currency === 'EUR' ? p.price / eurUsdRate : p.price;
       const sym = currency === 'EUR' ? '€' : '$';
       priceEl.textContent = sym + fmtCompact(displayPrice);
       const sign = p.pct >= 0 ? '+' : '';
@@ -1783,7 +1783,7 @@ function onTickerInput(val) {
   if (liveprices[t]) {
     const p = liveprices[t];
     const sym = currency === 'EUR' ? '€' : '$';
-    const displayPrice = currency === 'EUR' ? p.price * eurUsdRate : p.price;
+    const displayPrice = currency === 'EUR' ? p.price / eurUsdRate : p.price;
     priceHint.textContent = `Live: ${sym}${displayPrice.toFixed(2)}`;
     priceHint.classList.add('visible');
     hint.textContent = KNOWN[t] ? `✓ ${KNOWN[t]}` : '';
@@ -1809,7 +1809,7 @@ function addPosition() {
   if (!price || price <= 0) { showToast('⚠️ Please enter valid price'); return; }
 
   // Convert EUR to USD if needed for storage (always store in USD)
-  const priceUSD = currency === 'EUR' ? price / eurUsdRate : price;
+  const priceUSD = price; // form always accepts USD
 
   const idx = holdings.findIndex(h => h.ticker === ticker);
   if (idx >= 0) {
@@ -1991,7 +1991,7 @@ function renderHero() {
   const sym = currency === 'EUR' ? '€' : '$';
   document.getElementById('heroCurrencySymbol').textContent = sym;
 
-  const displayTotal = currency === 'EUR' ? totalUSD * eurUsdRate : totalUSD;
+  const displayTotal = currency === 'EUR' ? totalUSD / eurUsdRate : totalUSD;
   document.getElementById('heroValue').textContent = fmtNum(displayTotal);
   // Store raw for reference
   document.getElementById('heroValue').title = displayTotal.toFixed(2);
@@ -2002,9 +2002,9 @@ function renderHero() {
     pnlEl.textContent = '— Add positions';
   } else {
     const sign = gainUSD >= 0 ? '+' : '';
-    const displayGain = currency === 'EUR' ? gainUSD * eurUsdRate : gainUSD;
+    const displayGain = currency === 'EUR' ? gainUSD / eurUsdRate : gainUSD;
     pnlEl.className = 'hero-pnl ' + (gainUSD >= 0 ? 'pos' : 'neg');
-    pnlEl.innerHTML = `${gainUSD >= 0 ? '▲' : '▼'} ${sym}${fmtNum(Math.abs(currency==='EUR'?gainUSD*eurUsdRate:gainUSD))} (${sign}${gainPct.toFixed(2)}%)`;
+    pnlEl.innerHTML = `${gainUSD >= 0 ? '▲' : '▼'} ${sym}${fmtNum(Math.abs(currency==='EUR'?gainUSD/eurUsdRate:gainUSD))} (${sign}${gainPct.toFixed(2)}%)`;
   }
 
   document.getElementById('statHoldings').textContent = holdings.length;
@@ -2022,7 +2022,7 @@ function renderHero() {
   document.getElementById('qsHoldings').textContent = holdings.length;
   if (holdings.length > 0) {
     const sign = gainUSD >= 0 ? '+' : '';
-    const qsDisplayGain = currency === 'EUR' ? gainUSD * eurUsdRate : gainUSD;
+    const qsDisplayGain = currency === 'EUR' ? gainUSD / eurUsdRate : gainUSD;
     document.getElementById('qsGain').textContent = (gainUSD >= 0 ? '+' : '') + sym + fmtNum(Math.abs(qsDisplayGain));
     // Best performer
     let best = null, bestPct = -Infinity;
@@ -2061,8 +2061,8 @@ function renderHoldings() {
     const gainPct = costUSD > 0 ? (gainUSD / costUSD) * 100 : 0;
     const pct = totalUSD > 0 ? (valueUSD / totalUSD * 100).toFixed(2) : '0.00';
     const symbol = currency === 'EUR' ? '€' : '$';
-    const displayValue = currency === 'EUR' ? valueUSD * eurUsdRate : valueUSD;
-    const displayGain = currency === 'EUR' ? gainUSD * eurUsdRate : gainUSD;
+    const displayValue = currency === 'EUR' ? valueUSD / eurUsdRate : valueUSD;
+    const displayGain = currency === 'EUR' ? gainUSD / eurUsdRate : gainUSD;
     const abbr = h.ticker.substring(0,3);
     const colorGrad = h.color || SECTOR_COLORS[i % SECTOR_COLORS.length];
     const liveTag = lp ? `<span class="live-price-badge">● LIVE</span>` : '';
@@ -2073,7 +2073,7 @@ function renderHoldings() {
       </div>
       <div class="holding-info">
         <div class="holding-name">${h.ticker}${liveTag}</div>
-        <div class="holding-meta">${h.company} · ${h.shares} sh · avg ${symbol}${fmtNum(h.avgPriceUSD * (currency==='EUR' ? eurUsdRate : 1))} · ${pct}%</div>
+        <div class="holding-meta">${h.company} · ${h.shares} sh · avg ${symbol}${fmtNum(h.avgPriceUSD / (currency==='EUR' ? eurUsdRate : 1))} · ${pct}%</div>
       </div>
       <svg class="sparkline" viewBox="0 0 50 28" preserveAspectRatio="none">
         ${generateSparkline(gainPct)}
@@ -2290,7 +2290,7 @@ function openDetail(i) {
   const gainUSD = valueUSD - costUSD;
   const gainPct = costUSD > 0 ? (gainUSD / costUSD) * 100 : 0;
   const sym = currency === 'EUR' ? '€' : '$';
-  const rate = currency === 'EUR' ? eurUsdRate : 1;
+  const rate = currency === 'EUR' ? (1 / eurUsdRate) : 1;
 
   const sheet = document.getElementById('detailSheet');
   sheet.innerHTML = `
@@ -2308,14 +2308,14 @@ function openDetail(i) {
     <div class="detail-row">
       <div class="detail-key">Avg Buy Price<br><span style="font-size:10px;color:var(--text3);">entered in USD · shown in ${currency}</span></div>
       <div class="detail-val">
-        ${sym}${fmtNum(h.avgPriceUSD * (currency === 'EUR' ? eurUsdRate : 1))}
+        ${sym}${fmtNum(h.avgPriceUSD / (currency === 'EUR' ? eurUsdRate : 1))}
         ${currency === 'EUR' ? '<br><span style="font-size:11px;color:var(--text3);">($' + h.avgPriceUSD.toFixed(2) + ' USD)</span>' : ''}
       </div>
     </div>
     <div class="detail-row"><div class="detail-key">Current Price</div><div class="detail-val">${lp ? `${sym}${(lp * rate).toFixed(2)} <span class="live-price-badge">● LIVE</span>` : '— (no live data)'}</div></div>
-    <div class="detail-row"><div class="detail-key">Total Cost</div><div class="detail-val">${sym}${fmtNum(currency === 'EUR' ? costUSD * eurUsdRate : costUSD)}</div></div>
-    <div class="detail-row"><div class="detail-key">Current Value</div><div class="detail-val">${sym}${fmtNum(currency === 'EUR' ? valueUSD * eurUsdRate : valueUSD)}</div></div>
-    <div class="detail-row"><div class="detail-key">Gain / Loss</div><div class="detail-val" style="color:${gainUSD>=0?'var(--green)':'var(--red)'}">${gainUSD>=0?'+':''}${sym}${fmtNum(Math.abs(currency === 'EUR' ? gainUSD * eurUsdRate : gainUSD))} (${gainPct>=0?'+':''}${gainPct.toFixed(2)}%)</div></div>
+    <div class="detail-row"><div class="detail-key">Total Cost</div><div class="detail-val">${sym}${fmtNum(currency === 'EUR' ? costUSD / eurUsdRate : costUSD)}</div></div>
+    <div class="detail-row"><div class="detail-key">Current Value</div><div class="detail-val">${sym}${fmtNum(currency === 'EUR' ? valueUSD / eurUsdRate : valueUSD)}</div></div>
+    <div class="detail-row"><div class="detail-key">Gain / Loss</div><div class="detail-val" style="color:${gainUSD>=0?'var(--green)':'var(--red)'}">${gainUSD>=0?'+':''}${sym}${fmtNum(Math.abs(currency === 'EUR' ? gainUSD / eurUsdRate : gainUSD))} (${gainPct>=0?'+':''}${gainPct.toFixed(2)}%)</div></div>
     <div class="detail-row"><div class="detail-key">Sector</div><div class="detail-val">${h.sector || 'Other'}</div></div>
     <button class="delete-btn" onclick="deleteHolding(${i})">🗑 Remove Position</button>
   `;
