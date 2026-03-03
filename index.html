@@ -1304,7 +1304,7 @@
                 <input class="form-input" id="inputShares" type="number" min="0" step="any" placeholder="0.00">
               </div>
               <div class="form-group">
-                <div class="form-label">Avg Buy Price (<span id="formCurrencyLabel">$</span>)</div>
+                <div class="form-label">Avg Buy Price <span style="color:var(--accent);font-weight:700;">always in USD $</span></div>
                 <div class="form-input-wrap">
                   <input class="form-input" id="inputPrice" type="number" min="0" step="any" placeholder="0.00">
                 </div>
@@ -1616,7 +1616,7 @@ function setCurrency(c) {
   localStorage.setItem('nxCurrency', c);
   document.getElementById('btnUSD').classList.toggle('active', c === 'USD');
   document.getElementById('btnEUR').classList.toggle('active', c === 'EUR');
-  document.getElementById('formCurrencyLabel').textContent = c === 'EUR' ? '€' : '$';
+  // Form always stays in USD — label is static
   document.getElementById('heroCurrencySymbol').textContent = c === 'EUR' ? '€' : '$';
   renderAll();
 }
@@ -2073,7 +2073,7 @@ function renderHoldings() {
       </div>
       <div class="holding-info">
         <div class="holding-name">${h.ticker}${liveTag}</div>
-        <div class="holding-meta">${h.company} · ${h.shares} shares · ${pct}%</div>
+        <div class="holding-meta">${h.company} · ${h.shares} sh · avg ${symbol}${fmtNum(h.avgPriceUSD * (currency==='EUR' ? eurUsdRate : 1))} · ${pct}%</div>
       </div>
       <svg class="sparkline" viewBox="0 0 50 28" preserveAspectRatio="none">
         ${generateSparkline(gainPct)}
@@ -2305,7 +2305,13 @@ function openDetail(i) {
       </div>
     </div>
     <div class="detail-row"><div class="detail-key">Shares / Units</div><div class="detail-val">${h.shares}</div></div>
-    <div class="detail-row"><div class="detail-key">Avg Buy Price</div><div class="detail-val">${sym}${(h.avgPriceUSD * rate).toFixed(2)}</div></div>
+    <div class="detail-row">
+      <div class="detail-key">Avg Buy Price<br><span style="font-size:10px;color:var(--text3);">entered in USD · shown in ${currency}</span></div>
+      <div class="detail-val">
+        ${sym}${fmtNum(h.avgPriceUSD * (currency === 'EUR' ? eurUsdRate : 1))}
+        ${currency === 'EUR' ? '<br><span style="font-size:11px;color:var(--text3);">($' + h.avgPriceUSD.toFixed(2) + ' USD)</span>' : ''}
+      </div>
+    </div>
     <div class="detail-row"><div class="detail-key">Current Price</div><div class="detail-val">${lp ? `${sym}${(lp * rate).toFixed(2)} <span class="live-price-badge">● LIVE</span>` : '— (no live data)'}</div></div>
     <div class="detail-row"><div class="detail-key">Total Cost</div><div class="detail-val">${sym}${fmtNum(currency === 'EUR' ? costUSD * eurUsdRate : costUSD)}</div></div>
     <div class="detail-row"><div class="detail-key">Current Value</div><div class="detail-val">${sym}${fmtNum(currency === 'EUR' ? valueUSD * eurUsdRate : valueUSD)}</div></div>
