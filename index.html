@@ -1110,11 +1110,178 @@
   .next-update-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: livePulse 1.5s ease-in-out infinite; }
   .next-update-text { font-size: 11px; color: var(--text3); font-weight: 500; }
   .next-update-countdown { font-size: 11px; color: var(--accent); font-weight: 700; }
+
+  /* ===== SPLASH SCREEN ===== */
+  #splash {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #05080f;
+    overflow: hidden;
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  #splash.hide {
+    opacity: 0;
+    transform: scale(1.06);
+    pointer-events: none;
+  }
+  #splash-canvas {
+    position: absolute;
+    inset: 0;
+  }
+  .splash-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+  .splash-logo-ring {
+    width: 110px;
+    height: 110px;
+    border-radius: 32px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 28px;
+  }
+  .splash-logo-ring::before {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 35px;
+    background: conic-gradient(from 0deg, var(--accent), var(--accent2), transparent 60%);
+    animation: ringRotate 2s linear infinite;
+    z-index: -1;
+  }
+  .splash-logo-ring::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 32px;
+    background: #0a0e1a;
+    z-index: -1;
+  }
+  @keyframes ringRotate { to { transform: rotate(360deg); } }
+  .splash-logo-img {
+    width: 80px;
+    height: 80px;
+    border-radius: 22px;
+    object-fit: cover;
+  }
+  .splash-title {
+    font-size: 42px;
+    font-weight: 900;
+    letter-spacing: -2px;
+    background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    opacity: 0;
+    transform: translateY(16px);
+    animation: splashFadeUp 0.6s 0.3s ease forwards;
+  }
+  .splash-sub {
+    font-size: 13px;
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-top: 6px;
+    opacity: 0;
+    animation: splashFadeUp 0.6s 0.5s ease forwards;
+  }
+  @keyframes splashFadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .splash-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 52px;
+    width: 180px;
+    opacity: 0;
+    animation: splashFadeUp 0.5s 0.8s ease forwards;
+  }
+  .splash-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .splash-bar-label { font-size: 10px; color: rgba(255,255,255,0.25); letter-spacing: 1px; width: 60px; text-align: right; }
+  .splash-bar-track {
+    flex: 1;
+    height: 3px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .splash-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    width: 0%;
+    transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
+  }
+  .splash-version {
+    font-size: 11px;
+    color: rgba(255,255,255,0.15);
+    margin-top: 40px;
+    letter-spacing: 1px;
+    opacity: 0;
+    animation: splashFadeUp 0.5s 1s ease forwards;
+  }
+  /* Burst particles */
+  .splash-burst {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--accent);
+    pointer-events: none;
+    animation: burstOut var(--dur) ease forwards;
+    opacity: 0;
+  }
+  @keyframes burstOut {
+    0% { transform: translate(0,0) scale(1); opacity: 1; }
+    100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+  }
 </style>
 </head>
 <body>
 
 <canvas id="bg-canvas"></canvas>
+
+<!-- ===== SPLASH SCREEN ===== -->
+<div id="splash">
+  <canvas id="splash-canvas"></canvas>
+  <div class="splash-content">
+    <div class="splash-logo-ring">
+      <img class="splash-logo-img" id="splashLogoImg" src="" alt="Nexus">
+    </div>
+    <div class="splash-title">Nexus</div>
+    <div class="splash-sub">Portfolio Intelligence</div>
+    <div class="splash-bars">
+      <div class="splash-bar-row">
+        <div class="splash-bar-label">MARKETS</div>
+        <div class="splash-bar-track"><div class="splash-bar-fill" id="sb1"></div></div>
+      </div>
+      <div class="splash-bar-row">
+        <div class="splash-bar-label">PRICES</div>
+        <div class="splash-bar-track"><div class="splash-bar-fill" id="sb2"></div></div>
+      </div>
+      <div class="splash-bar-row">
+        <div class="splash-bar-label">READY</div>
+        <div class="splash-bar-track"><div class="splash-bar-fill" id="sb3"></div></div>
+      </div>
+    </div>
+    <div class="splash-version">v2.0 · Beta</div>
+  </div>
+</div>
 
 <div id="app">
   <!-- Status Bar -->
@@ -1151,6 +1318,8 @@
           <div class="ticker-item"><span class="ticker-sym">TSLA</span><span class="ticker-price" id="tk-TSLA">—</span><span class="ticker-chg" id="tc-TSLA">—</span></div>
           <div class="ticker-item"><span class="ticker-sym">SPY</span><span class="ticker-price" id="tk-SPY">—</span><span class="ticker-chg" id="tc-SPY">—</span></div>
           <div class="ticker-item"><span class="ticker-sym">BTC</span><span class="ticker-price" id="tk-BTC">—</span><span class="ticker-chg" id="tc-BTC">—</span></div>
+          <div class="ticker-item"><span class="ticker-sym">ETH</span><span class="ticker-price" id="tk-ETH">—</span><span class="ticker-chg" id="tc-ETH">—</span></div>
+          <div class="ticker-item"><span class="ticker-sym">ASML</span><span class="ticker-price" id="tk-ASML">—</span><span class="ticker-chg" id="tc-ASML">—</span></div>
           <div class="live-dot"></div>
         </div>
         <div class="update-label" id="tickerUpdateLabel">Updating…</div>
@@ -1423,18 +1592,62 @@ let openDetailIdx = -1;
 
 // Known tickers for autocomplete hint
 const KNOWN = {
+  // === US MEGA CAP ===
   AAPL:'Apple Inc.', MSFT:'Microsoft Corp.', GOOGL:'Alphabet Inc.', AMZN:'Amazon.com',
   TSLA:'Tesla Inc.', NVDA:'NVIDIA Corp.', META:'Meta Platforms', NFLX:'Netflix Inc.',
   AMD:'Advanced Micro Dev.', INTC:'Intel Corp.', BABA:'Alibaba Group', DIS:'Walt Disney',
   JPM:'JPMorgan Chase', GS:'Goldman Sachs', BAC:'Bank of America', WMT:'Walmart Inc.',
   PYPL:'PayPal Holdings', SBUX:'Starbucks Corp.', NKE:'Nike Inc.', PFE:'Pfizer Inc.',
   JNJ:'Johnson & Johnson', V:'Visa Inc.', MA:'Mastercard', BRK:'Berkshire Hathaway',
-  SPY:'S&P 500 ETF', QQQ:'Nasdaq ETF', VTI:'Vanguard Total Market',
-  BTC:'Bitcoin', ETH:'Ethereum', SOL:'Solana', ADA:'Cardano', XRP:'Ripple',
-  GLD:'Gold ETF', SLV:'Silver ETF', OIL:'Oil ETF',
-  UBER:'Uber Technologies', LYFT:'Lyft Inc.', SNAP:'Snap Inc.', TWTR:'Twitter/X',
+  UBER:'Uber Technologies', LYFT:'Lyft Inc.', SNAP:'Snap Inc.',
   COIN:'Coinbase', HOOD:'Robinhood', SQ:'Block Inc.', PLTR:'Palantir',
   ABNB:'Airbnb Inc.', SPOT:'Spotify', SHOP:'Shopify Inc.', ZM:'Zoom Video',
+  ORCL:'Oracle Corp.', CRM:'Salesforce', ADBE:'Adobe Inc.', QCOM:'Qualcomm',
+  COST:'Costco', MCD:'McDonald\'s', KO:'Coca-Cola', PEP:'PepsiCo',
+  XOM:'ExxonMobil', CVX:'Chevron', BA:'Boeing', CAT:'Caterpillar',
+  RACE:'Ferrari N.V.',
+  // === EUROPEAN STOCKS (Yahoo: use .PA .DE .AS .L suffix or ADR) ===
+  'SAF.PA':'Safran SA', 'AIR.PA':'Airbus SE', 'MC.PA':'LVMH', 'OR.PA':'L\'Oréal',
+  'SAN.PA':'Sanofi', 'BNP.PA':'BNP Paribas', 'SU.PA':'Schneider Electric',
+  'TTE.PA':'TotalEnergies', 'CS.PA':'AXA SA', 'KER.PA':'Kering',
+  'RMS.PA':'Hermès International', 'DSY.PA':'Dassault Systèmes',
+  'HO.PA':'Thales Group', 'CAP.PA':'Capgemini', 'VIE.PA':'Veolia',
+  'SGO.PA':'Saint-Gobain', 'RI.PA':'Pernod Ricard', 'FP.PA':'TotalEnergies',
+  'SAP':'SAP SE', 'ASML':'ASML Holding', 'PHIA.AS':'Philips',
+  'HEIA.AS':'Heineken', 'INGA.AS':'ING Group', 'RDSA.AS':'Shell',
+  'ALV.DE':'Allianz SE', 'BMW.DE':'BMW Group', 'MBG.DE':'Mercedes-Benz',
+  'VOW3.DE':'Volkswagen', 'SIE.DE':'Siemens AG', 'BAS.DE':'BASF SE',
+  'DB1.DE':'Deutsche Börse', 'DBK.DE':'Deutsche Bank',
+  'NESN.SW':'Nestlé SA', 'NOVN.SW':'Novartis', 'ROG.SW':'Roche',
+  'AZN':'AstraZeneca', 'SHEL':'Shell PLC', 'RIO':'Rio Tinto', 'HSBC':'HSBC',
+  'BP':'BP PLC', 'UL':'Unilever', 'GSK':'GSK PLC',
+  'ENI.MI':'Eni SpA', 'STLAM.MI':'Stellantis', 'ENEL.MI':'Enel SpA',
+  'SAN':'Banco Santander', 'IBE.MC':'Iberdrola',
+  // === ETFs ===
+  SPY:'SPDR S&P 500 ETF', QQQ:'Invesco Nasdaq ETF', VTI:'Vanguard Total Market',
+  VOO:'Vanguard S&P 500', IVV:'iShares Core S&P 500', GLD:'SPDR Gold ETF',
+  SLV:'iShares Silver ETF', IAU:'iShares Gold ETF', TLT:'iShares 20Y Treasury',
+  HYG:'iShares High Yield Bond', XLF:'SPDR Financial ETF', XLE:'SPDR Energy ETF',
+  XLK:'SPDR Technology ETF', ARKK:'ARK Innovation ETF', VNQ:'Vanguard Real Estate',
+  IEMG:'iShares EM ETF', EFA:'iShares MSCI EAFE', AGG:'iShares Core US Bond',
+  BND:'Vanguard Bond Market', VEA:'Vanguard Dev Markets', SCHD:'Schwab Dividend ETF',
+  VXUS:'Vanguard Intl Stock', VWO:'Vanguard Emerging Mkts', JEPI:'JPMorgan Premium Income',
+  JEPQ:'JPMorgan Nasdaq Premium', QQQM:'Invesco Nasdaq ETF', RSP:'Invesco Equal Weight',
+  VGT:'Vanguard IT ETF', SMH:'VanEck Semiconductors', SOXX:'iShares Semiconductors',
+  ARKG:'ARK Genomics ETF', ARKW:'ARK Web 3.0 ETF', XBI:'SPDR Biotech ETF',
+  LQD:'iShares Corp Bond', EMB:'iShares EM Bond', VIG:'Vanguard Dividend',
+  CSPX:'iShares Core S&P 500 (LSE)', VUSA:'Vanguard S&P 500 (LSE)',
+  IWDA:'iShares MSCI World', EUNL:'iShares Core MSCI World (EUR)',
+  // === CRYPTO ===
+  BTC:'Bitcoin', ETH:'Ethereum', SOL:'Solana', ADA:'Cardano', XRP:'Ripple',
+  DOGE:'Dogecoin', BNB:'BNB Chain', DOT:'Polkadot', MATIC:'Polygon',
+  AVAX:'Avalanche', LINK:'Chainlink', LTC:'Litecoin', UNI:'Uniswap',
+  ATOM:'Cosmos', NEAR:'NEAR Protocol', FTM:'Fantom', ALGO:'Algorand',
+  VET:'VeChain', SAND:'The Sandbox', MANA:'Decentraland', CRO:'Cronos',
+  APT:'Aptos', ARB:'Arbitrum', OP:'Optimism', INJ:'Injective',
+  SUI:'Sui Network', TON:'Toncoin', WIF:'dogwifhat', PEPE:'Pepe',
+  // === COMMODITIES / OTHER ===
+  GLD:'Gold ETF', SLV:'Silver ETF', OIL:'Oil ETF',
 };
 
 const SECTOR_COLORS = [
@@ -1690,7 +1903,7 @@ async function refreshPrices() {
   await fetchEurRate();
 
   // Gather tickers: holdings + ticker strip
-  const tickerSet = new Set(['AAPL','MSFT','NVDA','TSLA','SPY','BTC']);
+  const tickerSet = new Set(['AAPL','MSFT','NVDA','TSLA','SPY','BTC','ETH','ASML']);
   for (const h of holdings) {
     if (h.ticker) tickerSet.add(h.ticker.toUpperCase());
   }
@@ -1720,7 +1933,7 @@ async function refreshPrices() {
 }
 
 function updateTickerStrip() {
-  const strips = ['AAPL','MSFT','NVDA','TSLA','SPY','BTC'];
+  const strips = ['AAPL','MSFT','NVDA','TSLA','SPY','BTC','ETH','ASML'];
   const updateLabel = document.getElementById('tickerUpdateLabel');
   if (lastPriceUpdate) {
     updateLabel.textContent = `${lastPriceUpdate.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`;
@@ -1874,45 +2087,119 @@ const CRYPTO_LOGOS = {
   UNI:  'https://assets.coingecko.com/coins/images/12504/large/uniswap-uni.png',
   ATOM: 'https://assets.coingecko.com/coins/images/1481/large/cosmos_hub.png',
   NEAR: 'https://assets.coingecko.com/coins/images/10365/large/near.jpg',
+  FTM:  'https://assets.coingecko.com/coins/images/4001/large/Fantom_round.png',
+  ALGO: 'https://assets.coingecko.com/coins/images/4380/large/download.png',
+  VET:  'https://assets.coingecko.com/coins/images/1167/large/VeChain-Logo-768x725.png',
+  SAND: 'https://assets.coingecko.com/coins/images/12129/large/sandbox_logo.jpg',
+  MANA: 'https://assets.coingecko.com/coins/images/878/large/decentraland-mana.png',
+  APT:  'https://assets.coingecko.com/coins/images/26455/large/aptos_round.png',
+  ARB:  'https://assets.coingecko.com/coins/images/16547/large/photo_2023-03-29_21.47.00.jpeg',
+  OP:   'https://assets.coingecko.com/coins/images/25244/large/Optimism.png',
+  INJ:  'https://assets.coingecko.com/coins/images/12882/large/Secondary_Symbol.png',
+  SUI:  'https://assets.coingecko.com/coins/images/26375/large/sui_asset.jpeg',
+  TON:  'https://assets.coingecko.com/coins/images/17980/large/ton_symbol.png',
+  WIF:  'https://assets.coingecko.com/coins/images/33566/large/dogwifhat.jpg',
+  PEPE: 'https://assets.coingecko.com/coins/images/29850/large/pepe-token.jpeg',
+  CRO:  'https://assets.coingecko.com/coins/images/7310/large/cro_token_logo.png',
 };
 
-// Well-known ETF logos via issuer domains
-const ETF_LOGOS = {
-  SPY:  'https://assets.parqet.com/logos/symbol/SPY',
-  QQQ:  'https://assets.parqet.com/logos/symbol/QQQ',
-  VOO:  'https://assets.parqet.com/logos/symbol/VOO',
-  VTI:  'https://assets.parqet.com/logos/symbol/VTI',
-  IVV:  'https://assets.parqet.com/logos/symbol/IVV',
-  GLD:  'https://assets.parqet.com/logos/symbol/GLD',
-  SLV:  'https://assets.parqet.com/logos/symbol/SLV',
-  IAU:  'https://assets.parqet.com/logos/symbol/IAU',
-  TLT:  'https://assets.parqet.com/logos/symbol/TLT',
-  HYG:  'https://assets.parqet.com/logos/symbol/HYG',
-  XLF:  'https://assets.parqet.com/logos/symbol/XLF',
-  XLE:  'https://assets.parqet.com/logos/symbol/XLE',
-  XLK:  'https://assets.parqet.com/logos/symbol/XLK',
-  ARKK: 'https://assets.parqet.com/logos/symbol/ARKK',
-  VNQ:  'https://assets.parqet.com/logos/symbol/VNQ',
-  IEMG: 'https://assets.parqet.com/logos/symbol/IEMG',
-  EFA:  'https://assets.parqet.com/logos/symbol/EFA',
-  AGG:  'https://assets.parqet.com/logos/symbol/AGG',
-  BND:  'https://assets.parqet.com/logos/symbol/BND',
-  VEA:  'https://assets.parqet.com/logos/symbol/VEA',
-  SCHD: 'https://assets.parqet.com/logos/symbol/SCHD',
+// ETF logos — using official issuer logos when ETF-specific not available
+// Issuers: Vanguard, BlackRock/iShares, State Street/SPDR, Invesco, ARK, Schwab, VanEck, JPMorgan
+const ISSUER_LOGOS = {
+  VANGUARD:   'https://img.logo.dev/ticker/voo?token=pk_J9dMaFdDQpOBhzePQAfS3A&size=128',
+  BLACKROCK:  'https://img.logo.dev/ticker/blk?token=pk_J9dMaFdDQpOBhzePQAfS3A&size=128',
+  STATESTREET:'https://img.logo.dev/ticker/stt?token=pk_J9dMaFdDQpOBhzePQAfS3A&size=128',
+  INVESCO:    'https://img.logo.dev/ticker/ivz?token=pk_J9dMaFdDQpOBhzePQAfS3A&size=128',
+  ARK:        'https://img.logo.dev/ticker/arkk?token=pk_J9dMaFdDQpOBhzePQAfS3A&size=128',
+  SCHWAB:     'https://img.logo.dev/ticker/schw?token=pk_J9dMaFdDQpOBhzePQAfS3A&size=128',
+  VANECK:     'https://img.logo.dev/ticker/smh?token=pk_J9dMaFdDQpOBhzePQAfS3A&size=128',
+  JPMORGAN:   'https://img.logo.dev/ticker/jpm?token=pk_J9dMaFdDQpOBhzePQAfS3A&size=128',
+};
+
+const ETF_ISSUER_MAP = {
+  // Vanguard ETFs
+  VOO:'VANGUARD', VTI:'VANGUARD', BND:'VANGUARD', VEA:'VANGUARD', VNQ:'VANGUARD',
+  SCHD:'VANGUARD', VWO:'VANGUARD', VXUS:'VANGUARD', VIG:'VANGUARD', VGT:'VANGUARD',
+  VUSA:'VANGUARD',
+  // iShares / BlackRock
+  IVV:'BLACKROCK', TLT:'BLACKROCK', HYG:'BLACKROCK', IEMG:'BLACKROCK', EFA:'BLACKROCK',
+  AGG:'BLACKROCK', IAU:'BLACKROCK', SLV:'BLACKROCK', LQD:'BLACKROCK', EMB:'BLACKROCK',
+  SOXX:'BLACKROCK', XBI:'BLACKROCK', IWDA:'BLACKROCK', EUNL:'BLACKROCK', CSPX:'BLACKROCK',
+  // SPDR / State Street
+  SPY:'STATESTREET', GLD:'STATESTREET', XLF:'STATESTREET', XLE:'STATESTREET',
+  XLK:'STATESTREET',
+  // Invesco
+  QQQ:'INVESCO', QQQM:'INVESCO', RSP:'INVESCO',
+  // ARK Invest
+  ARKK:'ARK', ARKG:'ARK', ARKW:'ARK',
+  // Schwab
+  // VanEck
+  SMH:'VANECK',
+  // JPMorgan
+  JEPI:'JPMORGAN', JEPQ:'JPMORGAN',
+};
+
+// European stock logo direct mappings (Parqet uses ISIN-based lookup, works for EU stocks)
+const EU_STOCK_LOGOS = {
+  'SAF.PA': 'https://assets.parqet.com/logos/isin/FR0000073272',
+  'AIR.PA': 'https://assets.parqet.com/logos/isin/NL0000235190',
+  'MC.PA':  'https://assets.parqet.com/logos/isin/FR0000121014',
+  'OR.PA':  'https://assets.parqet.com/logos/isin/FR0000120321',
+  'SAN.PA': 'https://assets.parqet.com/logos/isin/FR0000120578',
+  'BNP.PA': 'https://assets.parqet.com/logos/isin/FR0000131104',
+  'TTE.PA': 'https://assets.parqet.com/logos/isin/FR0014000MR3',
+  'FP.PA':  'https://assets.parqet.com/logos/isin/FR0014000MR3',
+  'KER.PA': 'https://assets.parqet.com/logos/isin/FR0000121485',
+  'RMS.PA': 'https://assets.parqet.com/logos/isin/FR0000052292',
+  'DSY.PA': 'https://assets.parqet.com/logos/isin/FR0000130650',
+  'HO.PA':  'https://assets.parqet.com/logos/isin/FR0000121792',
+  'CAP.PA': 'https://assets.parqet.com/logos/isin/FR0000125338',
+  'SU.PA':  'https://assets.parqet.com/logos/isin/FR0000121972',
+  'CS.PA':  'https://assets.parqet.com/logos/isin/FR0000120628',
+  'SAP':    'https://assets.parqet.com/logos/isin/DE0007164600',
+  'ASML':   'https://assets.parqet.com/logos/isin/NL0010273215',
+  'ALV.DE': 'https://assets.parqet.com/logos/isin/DE0008404005',
+  'BMW.DE': 'https://assets.parqet.com/logos/isin/DE0005190003',
+  'MBG.DE': 'https://assets.parqet.com/logos/isin/DE0007100000',
+  'SIE.DE': 'https://assets.parqet.com/logos/isin/DE0007236101',
+  'BAS.DE': 'https://assets.parqet.com/logos/isin/DE000BASF111',
+  'NESN.SW':'https://assets.parqet.com/logos/isin/CH0038863350',
+  'NOVN.SW':'https://assets.parqet.com/logos/isin/CH0012221716',
+  'ROG.SW': 'https://assets.parqet.com/logos/isin/CH0012032048',
+  'AZN':    'https://assets.parqet.com/logos/isin/GB0009895292',
+  'SHEL':   'https://assets.parqet.com/logos/isin/GB00BP6MXD84',
+  'BP':     'https://assets.parqet.com/logos/isin/GB0007980591',
+  'GSK':    'https://assets.parqet.com/logos/isin/GB0009252882',
+  'HSBC':   'https://assets.parqet.com/logos/isin/GB0005405286',
+  'RACE':   'https://assets.parqet.com/logos/isin/NL0011585146',
+  'STLAM.MI':'https://assets.parqet.com/logos/isin/NL00150001Q9',
+  'ENI.MI': 'https://assets.parqet.com/logos/isin/IT0003132476',
+  'ENEL.MI':'https://assets.parqet.com/logos/isin/IT0003128367',
 };
 
 function getLogoSources(ticker) {
   const t = ticker.toUpperCase();
-  // Return array of URLs to try in order
   const sources = [];
+
+  // 1. Crypto logos (CoinGecko)
   if (CRYPTO_LOGOS[t]) sources.push(CRYPTO_LOGOS[t]);
-  if (ETF_LOGOS[t]) sources.push(ETF_LOGOS[t]);
-  // Parqet SVG (works for most major stocks worldwide)
+
+  // 2. European stock direct ISIN logos (Parqet)
+  const euKey = Object.keys(EU_STOCK_LOGOS).find(k => k.toUpperCase() === t);
+  if (euKey) sources.push(EU_STOCK_LOGOS[euKey]);
+
+  // 3. ETF: try issuer logo first, then symbol
+  if (ETF_ISSUER_MAP[t]) {
+    sources.push(ISSUER_LOGOS[ETF_ISSUER_MAP[t]]);
+  }
+
+  // 4. Parqet SVG (works for most major stocks worldwide including EU)
   sources.push(`https://assets.parqet.com/logos/symbol/${t}?format=svg`);
-  // Parqet PNG fallback
+  // 5. Parqet PNG
   sources.push(`https://assets.parqet.com/logos/symbol/${t}`);
-  // Logo.dev fallback for stocks (company domain based)
+  // 6. Logo.dev (company domain based)
   sources.push(`https://img.logo.dev/ticker/${t.toLowerCase()}?token=pk_J9dMaFdDQpOBhzePQAfS3A&size=128`);
+
   return sources;
 }
 
@@ -2409,11 +2696,112 @@ function init() {
   setCurrency(currency);
   renderAll();
   startCountdown();
-  // Auto-fetch on load after 1s
-  setTimeout(() => {
-    refreshPrices();
-  }, 1000);
+  // Prices fetched after splash
 }
+
+// ===========================
+// SPLASH SCREEN
+// ===========================
+(function() {
+  const splash = document.getElementById('splash');
+  const splashImg = document.getElementById('splashLogoImg');
+
+  // Set logo from app header (reuse same base64 src)
+  const mainLogo = document.querySelector('.logo-img');
+  if (mainLogo) splashImg.src = mainLogo.src;
+
+  // Animated splash canvas
+  const sc = document.getElementById('splash-canvas');
+  const sctx = sc.getContext('2d');
+  sc.width = window.innerWidth;
+  sc.height = window.innerHeight;
+
+  let splashParticles = [];
+  const accent = accentColor;
+  function hexToRgb(hex) {
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    return `${r},${g},${b}`;
+  }
+  const rgb = hexToRgb(accent);
+
+  // Create burst particles from center
+  for (let i = 0; i < 60; i++) {
+    const angle = (Math.PI * 2 / 60) * i + Math.random() * 0.2;
+    const speed = 0.3 + Math.random() * 1.5;
+    splashParticles.push({
+      x: sc.width/2, y: sc.height/2,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      r: Math.random() * 2 + 0.5,
+      alpha: 0.6 + Math.random() * 0.4,
+      life: 1,
+      decay: 0.003 + Math.random() * 0.005,
+    });
+  }
+
+  // Orbiting rings
+  let ringAngle = 0;
+  function drawSplashBg(t) {
+    sctx.clearRect(0, 0, sc.width, sc.height);
+    // Deep bg
+    const g = sctx.createRadialGradient(sc.width/2, sc.height/2, 0, sc.width/2, sc.height/2, sc.width*0.8);
+    g.addColorStop(0, `rgba(${rgb},0.12)`);
+    g.addColorStop(0.5, 'rgba(8,12,24,0.95)');
+    g.addColorStop(1, 'rgba(5,8,15,1)');
+    sctx.fillStyle = g;
+    sctx.fillRect(0, 0, sc.width, sc.height);
+
+    // Orbiting rings
+    ringAngle += 0.008;
+    for (let ri = 0; ri < 3; ri++) {
+      const radius = 80 + ri * 55;
+      const a = ringAngle + ri * (Math.PI * 2 / 3);
+      sctx.beginPath();
+      sctx.arc(sc.width/2, sc.height/2, radius, a, a + Math.PI * 1.2);
+      sctx.strokeStyle = `rgba(${rgb},${0.15 - ri*0.04})`;
+      sctx.lineWidth = 1.5 - ri * 0.3;
+      sctx.stroke();
+    }
+
+    // Burst particles
+    for (let p of splashParticles) {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.life -= p.decay;
+      if (p.life <= 0) continue;
+      sctx.beginPath();
+      sctx.arc(p.x, p.y, p.r * p.life, 0, Math.PI*2);
+      sctx.fillStyle = `rgba(${rgb},${p.alpha * p.life})`;
+      sctx.fill();
+    }
+  }
+
+  let splashRaf;
+  function splashLoop(t) {
+    drawSplashBg(t);
+    splashRaf = requestAnimationFrame(splashLoop);
+  }
+  splashRaf = requestAnimationFrame(splashLoop);
+
+  // Animate loading bars staggered
+  setTimeout(() => { document.getElementById('sb1').style.width = '100%'; }, 900);
+  setTimeout(() => { document.getElementById('sb2').style.width = '82%'; }, 1100);
+  setTimeout(() => { document.getElementById('sb3').style.width = '65%'; }, 1300);
+
+  // After bars fill → dismiss
+  setTimeout(() => {
+    document.getElementById('sb3').style.width = '100%';
+    setTimeout(() => {
+      cancelAnimationFrame(splashRaf);
+      splash.classList.add('hide');
+      setTimeout(() => {
+        splash.style.display = 'none';
+        // Now fetch prices
+        refreshPrices();
+      }, 700);
+    }, 500);
+  }, 2400);
+})();
 
 init();
 </script>
